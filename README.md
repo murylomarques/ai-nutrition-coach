@@ -25,26 +25,27 @@ A maioria dos aplicativos de dieta ou são genéricos demais ou exigem inputs ma
 ## 🏗️ Arquitetura do Sistema
 O projeto segue uma arquitetura baseada em **Serviços**, separando a lógica de negócio (Regras de Dieta) da camada de transporte (API).
 
-```markdown
+
 ### Fluxo de Dados Inteligente (Diagrama)
 ```mermaid
 graph TD
-    A[👤 Usuário] -->|Input Dados| B(🖥️ Frontend React)
-    B -->|POST JSON| C{⚙️ Backend FastAPI}
-    C -->|Validação Pydantic| D[📂 Diet Service]
+    A[Usuario] -->|Input Dados| B(Frontend React)
+    B -->|POST JSON| C{Backend FastAPI}
+    C -->|Validação Pydantic| D[Diet Service]
     
     subgraph "Núcleo de Inteligência"
-    D -->|Tenta Conectar| E[🤖 Google Gemini 2.5]
-    E -->|Sucesso?| F[✅ Retorna Plano JSON]
-    E -.->|Falha/Timeout| G[⚠️ Algoritmo Fallback]
+    D -->|Tenta Conectar| E[Google Gemini 2.5]
+    E -->|Sucesso?| F[Retorna Plano JSON]
+    E -.->|Falha/Timeout| G[Algoritmo Fallback]
     G -->|Cálculo Matemático| F
     end
     
     F --> C
     C --> B
     B -->|Renderiza| A
+
 ```
-```
+
 
 ---
 
