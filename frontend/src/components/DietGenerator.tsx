@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Loader2, ChefHat, CheckCircle, AlertCircle } from 'lucide-react';
 
-// --- DEFINIÇÃO DOS TIPOS (Colocamos aqui para resolver o erro de import) ---
+// --- TIPOS LOCAIS (Definidos aqui para evitar erros de importação) ---
 
 export interface UserPreferences {
   age: number;
@@ -33,9 +33,28 @@ export interface DietPlan {
   notes: string[];
 }
 
+// Tipo que vem do Banco de Dados (Histórico)
+export interface DietHistoryItem {
+  id: number;
+  user_age: number;
+  user_weight: number;
+  user_goal: string;
+  plan_title: string;
+  calories_total: number;
+  protein_total: number;
+  meals_json: Record<string, MealItem>;
+  notes_json: string[] | string; 
+  created_at: string;
+}
+
+// Props do componente
+interface DietGeneratorProps {
+  historyData?: DietHistoryItem | null;
+}
+
 // --- FIM DOS TIPOS ---
 
-export function DietGenerator() {
+export function DietGenerator({ historyData }: DietGeneratorProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [plan, setPlan] = useState<DietPlan | null>(null);
@@ -51,6 +70,44 @@ export function DietGenerator() {
     food_preferences: []
   });
 
+  // --- EFEITO: Carrega dados do Histórico quando o usuário clica na barra lateral ---
+  useEffect(() => {
+    if (historyData) {
+      console.log("Restaurando histórico:", historyData);
+
+      // 1. Preenche o resultado visual (O Plano)
+      // Precisamos garantir que notes seja um array, pois no banco pode virar string
+      let parsedNotes: string[] = [];
+      try {
+        if (typeof historyData.notes_json === 'string') {
+          parsedNotes = JSON.parse(historyData.notes_json);
+        } else if (Array.isArray(historyData.notes_json)) {
+          parsedNotes = historyData.notes_json;
+        }
+      } catch (e) {
+        parsedNotes = ["Nota recuperada do histórico."];
+      }
+
+      setPlan({
+        plan_title: historyData.plan_title,
+        calories_total: historyData.calories_total,
+        protein_total: historyData.protein_total,
+        carbs_total: 0, // Campos opcionais no histórico simplificado
+        fat_total: 0,
+        meals: historyData.meals_json,
+        notes: parsedNotes
+      });
+
+      // 2. Preenche o formulário com os dados que geraram aquela dieta
+      setFormData(prev => ({
+        ...prev,
+        age: historyData.user_age,
+        weight: historyData.user_weight,
+        goal: historyData.user_goal
+      }));
+    }
+  }, [historyData]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -58,8 +115,8 @@ export function DietGenerator() {
     setPlan(null);
 
     try {
-      // Chamada para o seu Backend Python
-      const response = await axios.post('http://127.0.0.1:8000/api/generate', formData);
+      // Chama o backend
+      const response = await axios.post('http://localhost:8000/api/generate', formData);
       setPlan(response.data);
     } catch (err) {
       console.error("Erro ao gerar dieta:", err);
@@ -79,7 +136,6 @@ export function DietGenerator() {
         </h2>
         
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Grid para inputs numéricos */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Idade</label>
@@ -88,7 +144,6 @@ export function DietGenerator() {
                 value={formData.age}
                 onChange={e => setFormData({...formData, age: Number(e.target.value)})}
                 className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition"
-                placeholder="Ex: 25"
                 required
               />
             </div>
@@ -99,7 +154,6 @@ export function DietGenerator() {
                 value={formData.weight}
                 onChange={e => setFormData({...formData, weight: Number(e.target.value)})}
                 className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition"
-                placeholder="Ex: 70"
                 required
               />
             </div>
@@ -110,7 +164,6 @@ export function DietGenerator() {
                 value={formData.height}
                 onChange={e => setFormData({...formData, height: Number(e.target.value)})}
                 className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition"
-                placeholder="Ex: 175"
                 required
               />
             </div>
@@ -129,7 +182,6 @@ export function DietGenerator() {
             </div>
           </div>
 
-          {/* Objetivo */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Qual seu objetivo?</label>
             <select 
@@ -163,7 +215,6 @@ export function DietGenerator() {
       {/* --- LADO DIREITO: RESULTADO --- */}
       <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 min-h-[400px] flex flex-col">
         
-        {/* Estado: Erro */}
         {error && (
           <div className="bg-red-50 text-red-600 p-4 rounded-lg flex items-center gap-3 border border-red-100 mb-4">
             <AlertCircle size={24} />
@@ -171,7 +222,6 @@ export function DietGenerator() {
           </div>
         )}
 
-        {/* Estado: Vazio (Inicial) */}
         {!plan && !loading && !error && (
           <div className="h-full flex flex-col items-center justify-center text-slate-400 text-center p-8">
             <div className="bg-slate-100 p-4 rounded-full mb-4">
@@ -182,7 +232,6 @@ export function DietGenerator() {
           </div>
         )}
 
-        {/* Estado: Loading (Esqueleto simples) */}
         {loading && (
           <div className="h-full flex flex-col items-center justify-center space-y-4 animate-pulse">
             <div className="h-8 w-3/4 bg-slate-200 rounded"></div>
@@ -191,7 +240,6 @@ export function DietGenerator() {
           </div>
         )}
 
-        {/* Estado: Sucesso (Mostra o Plano) */}
         {plan && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="mb-6 pb-4 border-b border-slate-200">
@@ -220,7 +268,6 @@ export function DietGenerator() {
               ))}
             </div>
             
-            {/* Notas / Disclaimer */}
             <div className="mt-8 bg-yellow-50 border border-yellow-100 p-4 rounded-lg">
               <div className="flex gap-2 text-yellow-800 font-semibold text-sm mb-2">
                 <CheckCircle size={16} />
