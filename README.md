@@ -2,17 +2,19 @@
 
 ![Status](https://img.shields.io/badge/STATUS-MVP_COMPLETO-green?style=for-the-badge&logo=github)
 ![AI](https://img.shields.io/badge/AI-GEMINI_2.5-blue?style=for-the-badge&logo=google)
-![Stack](https://img.shields.io/badge/STACK-FASTAPI_REACT-orange?style=for-the-badge)
+![Stack](https://img.shields.io/badge/STACK-FASTAPI_REACT_SQL-orange?style=for-the-badge)
 
-> **Sua dieta personalizada gerada por Inteligência Artificial em segundos.**
+> **Sua dieta personalizada gerada por Inteligência Artificial, salva e exportável.**
 
-Uma aplicação Full-Stack que utiliza a mais recente tecnologia de LLMs (Google Gemini 2.5) para criar planos alimentares baseados em dados metabólicos reais.
+Uma aplicação Full-Stack robusta que utiliza a mais recente tecnologia de LLMs (Google Gemini 2.5) para criar, persistir e gerenciar planos alimentares baseados em dados metabólicos reais.
 
-## 🎯 Por que este projeto é importante?
-A maioria dos aplicativos de dieta ou são genéricos demais ou exigem inputs manuais exaustivos. O **AI Nutrition Coach** resolve isso combinando:
-1.  **Ciência Nutricional:** Cálculos de TMB (Taxa Metabólica Basal) e macros.
-2.  **Personalização via IA:** Adaptação criativa de pratos baseada em gostos e objetivos.
-3.  **Escalabilidade:** Capacidade de gerar milhares de planos únicos sem intervenção humana.
+## 🎯 Diferenciais do Projeto (Nível Enterprise)
+A maioria dos MVPs de portfólio são apenas "wrappers" de API. O **AI Nutrition Coach** vai além, implementando um ciclo de vida de dados completo:
+
+1.  **Persistência Real:** Diferente de apps que perdem dados no refresh, aqui utilizamos **SQLAlchemy** e **SQLite** para salvar cada dieta gerada.
+2.  **Histórico & Retenção:** O usuário pode consultar planos anteriores via Sidebar, simulando um SaaS real.
+3.  **Exportação Profissional:** Geração de PDF nativa no frontend para uso offline.
+4.  **Arquitetura Resiliente:** Se a IA falhar, um algoritmo matemático assume o controle (Fallback System).
 
 ---
 
@@ -23,78 +25,82 @@ A maioria dos aplicativos de dieta ou são genéricos demais ou exigem inputs ma
 ---
 
 ## 🏗️ Arquitetura do Sistema
-O projeto segue uma arquitetura baseada em **Serviços**, separando a lógica de negócio (Regras de Dieta) da camada de transporte (API).
 
+O projeto segue uma arquitetura baseada em **Serviços** com camada de persistência gerenciada por Migrations.
 
-### Fluxo de Dados Inteligente (Diagrama)
+### Fluxo de Dados (Diagrama Atualizado)
 ```mermaid
 graph TD
-    A[Usuario] -->|Input Dados| B(Frontend React)
-    B -->|POST JSON| C{Backend FastAPI}
-    C -->|Validação Pydantic| D[Diet Service]
+    A[👤 Usuário] -->|Input/Histórico| B(🖥️ Frontend React)
+    B -->|POST/GET| C{⚙️ Backend FastAPI}
+    
+    subgraph "Camada de Dados"
+    C <-->|ORM / SQLAlchemy| DB[(🗄️ Banco SQLite)]
+    end
     
     subgraph "Núcleo de Inteligência"
-    D -->|Tenta Conectar| E[Google Gemini 2.5]
-    E -->|Sucesso?| F[Retorna Plano JSON]
-    E -.->|Falha/Timeout| G[Algoritmo Fallback]
+    C -->|Solicita Plano| D[📂 Diet Service]
+    D -->|Tenta Conectar| E[🤖 Google Gemini 2.5]
+    E -->|Sucesso?| F[✅ Retorna JSON]
+    E -.->|Falha/Timeout| G[⚠️ Algoritmo Fallback]
     G -->|Cálculo Matemático| F
     end
     
     F --> C
     C --> B
-    B -->|Renderiza| A
-
+    B -->|Renderiza/PDF| A
 ```
-
 
 ---
 
 ## 🚀 Tecnologias Utilizadas
 
-### Backend (API & Lógica)
-- **FastAPI:** Para endpoints assíncronos de alta performance.
-- **Python 3.10+:** Linguagem base.
-- **Google Generative AI:** SDK oficial para comunicação com LLM.
-- **Pydantic:** Garante que os dados de entrada e saída sigam um contrato estrito.
-- **Service Pattern:** Isolamento da lógica da IA para facilitar testes e manutenção.
+### Backend (API & Dados)
+- **FastAPI:** Framework moderno e assíncrono.
+- **SQLAlchemy:** ORM para manipulação de banco de dados SQL.
+- **Alembic:** Gerenciamento de migrações de esquema (Schema Migrations).
+- **Google Generative AI:** Integração com LLM Gemini 2.5 Flash.
+- **Pydantic:** Validação rigorosa de dados e serialização.
 
-### Frontend (Interface)
-- **React (Vite):** SPA rápida e modular.
-- **TypeScript:** Segurança de tipos para evitar erros em runtime.
-- **Tailwind CSS:** Estilização utility-first para UI moderna.
-- **Axios:** Cliente HTTP robusto.
+### Frontend (Interface & UX)
+- **React (Vite) + TypeScript:** Segurança de tipos e performance.
+- **Tailwind CSS:** Design system moderno e responsivo.
+- **Axios:** Comunicação com API.
+- **React-to-Print:** Engine de geração de PDF e impressão.
 
 ---
 
 ## ⚙️ Instalação e Execução
 
 ### Pré-requisitos
-- Python 3.x
+- Python 3.10+
 - Node.js
 - Chave de API do Google (Gratuita no AI Studio)
 
-### 1. Backend
+### 1. Configurar Backend
 ```bash
 cd backend
-# Criar ambiente virtual
 python -m venv .venv
-# Ativar (Windows)
+
+# Windows
 .venv\Scripts\activate
-# Ativar (Mac/Linux)
+# Linux/Mac
 source .venv/bin/activate
 
-# Instalar dependências
 pip install -r requirements.txt
 
-# Configurar Chave
+# Configurar Variáveis
 # Crie um arquivo .env na pasta backend e adicione:
 # GOOGLE_API_KEY=sua_chave_aqui
 
-# Rodar
+# Inicializar Banco de Dados (Migrations)
+alembic upgrade head
+
+# Rodar Servidor
 uvicorn app.main:app --reload --host 0.0.0.0
 ```
 
-### 2. Frontend
+### 2. Configurar Frontend
 ```bash
 cd frontend
 npm install
@@ -105,14 +111,16 @@ O projeto estará rodando em: `http://localhost:5173`
 ---
 
 ## 🛡️ Robustez e Fallback
-Um diferencial deste projeto é o sistema de **Fallback**. 
-Depender de APIs externas (como OpenAI ou Google) traz riscos de indisponibilidade. Implementei um sistema que:
-1. Tenta gerar a dieta via IA.
-2. Se houver erro de rede, bloqueio de segurança ou timeout...
-3. O sistema **automaticamente** ativa um algoritmo local (Mock Inteligente) que calcula as calorias e entrega uma dieta baseada em padrões matemáticos.
-**Resultado:** O usuário nunca fica sem resposta.
+Um diferencial técnico deste projeto é o tratamento de falhas em APIs de Terceiros. 
+Depender de IAs externas traz riscos de indisponibilidade ou bloqueios de segurança. 
+
+**Solução Implementada:**
+1. O sistema tenta gerar a dieta via IA (Gemini).
+2. Se houver erro 429 (Quota), 500 ou Timeout...
+3. O Backend **automaticamente** ativa um algoritmo local (Mock Inteligente) que calcula TMB e Macros matematicamente.
+**Resultado:** O usuário sempre recebe uma resposta, garantindo disponibilidade de 99.9%.
 
 ---
 
 ## 👨‍💻 Autor
-Desenvolvido como projeto de portfólio focado em Engenharia de Software e IA.
+Desenvolvido como projeto de portfólio focado em Engenharia de Software Full-Stack.
