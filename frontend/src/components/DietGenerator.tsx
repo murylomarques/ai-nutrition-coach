@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useReactToPrint } from 'react-to-print';
 import { Loader2, ChefHat, CheckCircle, AlertCircle, Printer } from 'lucide-react';
+import { api } from '../api';
 
 // --- TIPOS LOCAIS ---
 export interface UserPreferences {
@@ -116,8 +117,7 @@ export function DietGenerator({ historyData }: DietGeneratorProps) {
     setPlan(null);
 
     try {
-      const response = await axios.post('http://localhost:8000/api/generate', formData);
-      setPlan(response.data);
+      const response = await api.post('/generate', formData);
     } catch (err) {
       console.error("Erro ao gerar dieta:", err);
       setError("Erro ao conectar com o servidor. Verifique se o backend está rodando.");

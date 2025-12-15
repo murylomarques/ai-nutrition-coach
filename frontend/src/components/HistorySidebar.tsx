@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { X, Clock, ChevronRight } from 'lucide-react';
 import type { DietHistoryItem } from '../types';
+import { api } from '../api';
 
 interface HistorySidebarProps {
   isOpen: boolean;
@@ -23,7 +24,7 @@ export function HistorySidebar({ isOpen, onClose, onSelect }: HistorySidebarProp
   const fetchHistory = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:8000/api/history');
+      const response = await api.get('/history');
       setHistory(response.data);
     } catch (error) {
       console.error("Failed to fetch history", error);
