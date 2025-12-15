@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
 import { X, Clock, ChevronRight } from 'lucide-react';
 import type { DietHistoryItem } from '../types';
 import { api } from '../api';

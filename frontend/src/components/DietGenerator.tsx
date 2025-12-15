@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
 import { useReactToPrint } from 'react-to-print';
 import { Loader2, ChefHat, CheckCircle, AlertCircle, Printer } from 'lucide-react';
 import { api } from '../api';
