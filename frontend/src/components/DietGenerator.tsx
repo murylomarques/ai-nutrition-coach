@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { Loader2, ChefHat, CheckCircle, AlertCircle, Printer } from 'lucide-react';
-import { api } from '../api';
+import { api } from '../api'; // <--- Importação correta (sem axios)
 
-// --- TIPOS LOCAIS ---
+// --- TIPOS ---
 export interface UserPreferences {
   age: number;
   weight: number;
@@ -50,17 +50,14 @@ interface DietGeneratorProps {
   historyData?: DietHistoryItem | null;
 }
 
-// --- COMPONENTE ---
 
 export function DietGenerator({ historyData }: DietGeneratorProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [plan, setPlan] = useState<DietPlan | null>(null);
   
-  // Referência para impressão (Onde o PDF vai "tirar foto")
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // Configuração da Impressão
   const handlePrint = useReactToPrint({
     contentRef: contentRef,
     documentTitle: plan ? `Dieta - ${plan.plan_title}` : 'Minha Dieta',
@@ -78,7 +75,6 @@ export function DietGenerator({ historyData }: DietGeneratorProps) {
 
   useEffect(() => {
     if (historyData) {
-      console.log("Restaurando histórico:", historyData);
       let parsedNotes: string[] = [];
       try {
         if (typeof historyData.notes_json === 'string') {
@@ -116,10 +112,15 @@ export function DietGenerator({ historyData }: DietGeneratorProps) {
     setPlan(null);
 
     try {
+      // 1. Chama a API
       const response = await api.post('/generate', formData);
+      
+      // 2. USA a resposta (Isso corrige o erro TS6133)
+      setPlan(response.data);
+
     } catch (err) {
       console.error("Erro ao gerar dieta:", err);
-      setError("Erro ao conectar com o servidor. Verifique se o backend está rodando.");
+      setError("Erro ao conectar com o servidor.");
     } finally {
       setLoading(false);
     }
@@ -127,8 +128,7 @@ export function DietGenerator({ historyData }: DietGeneratorProps) {
 
   return (
     <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
-      
-      {/* --- FORMULÁRIO --- */}
+      {/* FORMULÁRIO */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 h-fit">
         <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-slate-800">
           <ChefHat className="text-teal-600" /> Seus Dados
@@ -204,10 +204,8 @@ export function DietGenerator({ historyData }: DietGeneratorProps) {
         </form>
       </div>
 
-      {/* --- RESULTADO --- */}
+      {/* RESULTADO */}
       <div className="flex flex-col gap-4">
-        
-        {/* Botão de Imprimir (Só aparece se tiver plano) */}
         {plan && (
           <div className="flex justify-end">
             <button 
@@ -221,10 +219,7 @@ export function DietGenerator({ historyData }: DietGeneratorProps) {
         )}
 
         <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 min-h-[400px] flex flex-col relative">
-          
-          {/* DIV REF: Tudo aqui dentro sai na impressão */}
           <div ref={contentRef} className="p-4 print:p-8 bg-slate-50 print:bg-white h-full">
-            
             {error && (
               <div className="bg-red-50 text-red-600 p-4 rounded-lg flex items-center gap-3 border border-red-100 mb-4">
                 <AlertCircle size={24} />
@@ -252,7 +247,6 @@ export function DietGenerator({ historyData }: DietGeneratorProps) {
 
             {plan && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                {/* Header do PDF */}
                 <div className="mb-6 pb-4 border-b border-slate-200">
                   <h3 className="text-2xl font-bold text-teal-800 leading-tight">{plan.plan_title}</h3>
                   <div className="flex gap-4 mt-3 text-sm font-medium text-slate-600 bg-white p-3 rounded-lg border border-slate-100 inline-flex shadow-sm print:shadow-none print:border-0 print:p-0">
@@ -291,11 +285,9 @@ export function DietGenerator({ historyData }: DietGeneratorProps) {
                   </ul>
                 </div>
                 
-                {/* Rodapé que só aparece na impressão */}
                 <div className="hidden print:block mt-8 pt-8 border-t text-center text-xs text-slate-400">
                     <p>Gerado por AI Nutrition Coach • Murylo Marques</p>
                 </div>
-
               </div>
             )}
           </div>
